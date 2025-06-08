@@ -1,0 +1,287 @@
+
+"use client";
+
+import { useState, useEffect, useCallback } from 'react';
+import { useForm, useFieldArray, Controller, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import VisitorFields from './VisitorFields';
+import { calculateTotalPrice, PRICING_TIERS } from '@/lib/helpers';
+import { addBooking } from '@/lib/firestore';
+import type { Visitor, CountryOption } from '@/types/booking';
+import { useToast } from "@/hooks/use-toast";
+import { CalendarIcon, UserPlus, Users, DollarSign, Leaf, Mail, Phone, Info } from 'lucide-react';
+import { format } from "date-fns";
+import Image from 'next/image';
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+const visitorSchema = z.object({
+  id: z.string(), // For client-side keying
+  name: z.string().min(1, 'Visitor name is required'),
+  country: z.enum(['Nepal', 'SAARC', 'Other'], { required_error: 'Country is required' }),
+});
+
+const bookingFormSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
+  dateOfVisit: z.date({ required_error: "Date of visit is required." }),
+  numberOfVisitors: z.number().min(1, 'At least one visitor is required').max(10, 'Maximum 10 visitors allowed'),
+  visitors: z.array(visitorSchema).min(1, 'Visitor details are required'),
+});
+
+export type BookingFormData = z.infer<typeof bookingFormSchema>;
+
+export default function BookingForm() {
+  const { toast } = useToast();
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<BookingFormData>({
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      phone: '',
+      dateOfVisit: undefined,
+      numberOfVisitors: 1,
+      visitors: [{ id: crypto.randomUUID(), name: '', country: 'Nepal' }],
+    },
+  });
+
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = form;
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'visitors',
+  });
+
+  const watchedVisitors = watch('visitors');
+  const numberOfVisitors = watch('numberOfVisitors');
+
+  useEffect(() => {
+    const newTotal = calculateTotalPrice(watchedVisitors);
+    setTotalPrice(newTotal);
+  }, [watchedVisitors]);
+
+  useEffect(() => {
+    const currentVisitorCount = fields.length;
+    if (numberOfVisitors > currentVisitorCount) {
+      for (let i = 0; i < numberOfVisitors - currentVisitorCount; i++) {
+        append({ id: crypto.randomUUID(), name: '', country: 'Nepal' as CountryOption });
+      }
+    } else if (numberOfVisitors < currentVisitorCount) {
+      for (let i = 0; i < currentVisitorCount - numberOfVisitors; i++) {
+        remove(currentVisitorCount - 1 - i);
+      }
+    }
+  }, [numberOfVisitors, fields.length, append, remove]);
+
+
+  const onSubmit: SubmitHandler<BookingFormData> = async (data) => {
+    setIsSubmitting(true);
+    try {
+      const bookingDataToSave = {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        dateOfVisit: format(data.dateOfVisit, "yyyy-MM-dd"),
+        numberOfVisitors: data.numberOfVisitors,
+        visitors: data.visitors.map(v => ({ name: v.name, country: v.country })), // Store without client-side id
+        totalPrice: calculateTotalPrice(data.visitors),
+      };
+
+      const bookingId = await addBooking(bookingDataToSave);
+      toast({
+        title: "Booking Successful!",
+        description: (
+          <div>
+            <p>Your booking ID is {bookingId}.</p>
+            <p>Visit Date: {format(data.dateOfVisit, "PPP")}</p>
+            <p>Total Amount: Rs. {totalPrice}</p>
+          </div>
+        ),
+        variant: "default",
+        duration: 7000,
+      });
+      form.reset();
+      setTotalPrice(0);
+    } catch (error) {
+      console.error("Booking failed:", error);
+      toast({
+        title: "Booking Failed",
+        description: "There was an error processing your booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-2xl mx-auto shadow-xl">
+      <CardHeader>
+        <div className="flex items-center gap-2 mb-2">
+          <Leaf className="h-8 w-8 text-primary" />
+          <CardTitle className="text-3xl font-headline">Book Your Park Visit</CardTitle>
+        </div>
+        <CardDescription>Fill in the details below to secure your tickets for Chitwan National Park.</CardDescription>
+      </CardHeader>
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <FormControl>
+                      <Input id="fullName" placeholder="e.g. John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="email"><Mail className="inline h-4 w-4 mr-1" />Email</Label>
+                    <FormControl>
+                      <Input id="email" type="email" placeholder="john.doe@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="phone"><Phone className="inline h-4 w-4 mr-1" />Phone</Label>
+                    <FormControl>
+                      <Input id="phone" type="tel" placeholder="9800000000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+             <FormField
+                control={control}
+                name="dateOfVisit"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <Label htmlFor="dateOfVisit"><CalendarIcon className="inline h-4 w-4 mr-1" />Date of Visit</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                          >
+                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1)) } // Disable past dates
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={control}
+              name="numberOfVisitors"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="numberOfVisitors"><Users className="inline h-4 w-4 mr-1" />Number of Visitors</Label>
+                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)}>
+                    <FormControl>
+                      <SelectTrigger id="numberOfVisitors">
+                        <SelectValue placeholder="Select number of visitors" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[...Array(10)].map((_, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>{i + 1}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {fields.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold font-headline text-primary">Visitor Details</h3>
+                {fields.map((field, index) => (
+                  <VisitorFields key={field.id} index={index} register={register} control={control} errors={errors} />
+                ))}
+              </div>
+            )}
+
+            <Card className="bg-secondary/30">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center"><DollarSign className="h-6 w-6 mr-2 text-primary" />Total Price</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-primary">Rs. {totalPrice.toLocaleString()}</p>
+                <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                    <li>Nepali: Rs. {PRICING_TIERS.Nepal}</li>
+                    <li>SAARC: Rs. {PRICING_TIERS.SAARC}</li>
+                    <li>Other: Rs. {PRICING_TIERS.Other}</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-accent/10 border-accent">
+                <CardHeader className="flex flex-row items-start space-x-3 pb-3">
+                    <Image src="https://placehold.co/100x40.png" alt="eSewa Logo" width={80} height={32} data-ai-hint="logo payment" className="rounded"/>
+                    <div>
+                        <CardTitle className="text-lg text-accent-foreground/90">Payment Information</CardTitle>
+                         <CardDescription className="text-accent-foreground/70">
+                            Currently, we only support payment via eSewa. Please proceed with the booking and follow instructions for payment.
+                        </CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-accent-foreground/80">
+                        <Info className="inline h-4 w-4 mr-1 text-accent"/>
+                        This is a demo. No actual payment will be processed.
+                    </p>
+                </CardContent>
+            </Card>
+
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting}>
+              {isSubmitting ? 'Processing...' : 'Book Tickets Now'}
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
+    </Card>
+  );
+}
