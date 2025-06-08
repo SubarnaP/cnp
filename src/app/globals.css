@@ -41,14 +41,19 @@
     --chart-4: 17 17% 70%;
     --chart-5: 123 41% 80%;
 
-    --sidebar-background: 123 30% 96%;
-    --sidebar-foreground: 123 41% 15%;
-    --sidebar-primary: 123 41% 40%;
-    --sidebar-primary-foreground: 120 100% 98%;
-    --sidebar-accent: 123 41% 80%;
-    --sidebar-accent-foreground: 123 41% 20%;
-    --sidebar-border: 123 30% 85%;
-    --sidebar-ring: 123 41% 45%;
+    /* Sidebar specific colors from image */
+    --sidebar-bg: 148 38% 28%; /* Dark Green from image */
+    --sidebar-fg: 0 0% 100%;    /* White */
+    --sidebar-border-color: 148 38% 22%; /* Slightly darker green than bg for borders */
+    
+    --sidebar-active-bg: 147 44% 40%; /* Brighter Green for active item */
+    --sidebar-active-fg: 0 0% 100%;   /* White */
+
+    --sidebar-hover-bg: 148 38% 32%; /* Intermediate Green for hover */
+    --sidebar-hover-fg: 0 0% 100%;    /* White */
+
+    --sidebar-logo-square-bg: 0 0% 100%; /* White for logo square */
+    --sidebar-logo-icon-fg: 148 38% 28%;  /* Dark green for logo icon, same as sidebar bg */
   }
 
   .dark {
@@ -86,14 +91,19 @@
     --chart-4: 17 17% 40%;
     --chart-5: 123 41% 25%;
     
-    --sidebar-background: 123 20% 10%;
-    --sidebar-foreground: 125 30% 85%;
-    --sidebar-primary: 123 41% 55%;
-    --sidebar-primary-foreground: 123 41% 10%;
-    --sidebar-accent: 123 30% 25%;
-    --sidebar-accent-foreground: 125 30% 85%;
-    --sidebar-border: 123 20% 28%;
-    --sidebar-ring: 123 41% 55%;
+    /* Sidebar dark theme colors */
+    --sidebar-bg: 148 30% 22%; /* Darker green for dark mode sidebar */
+    --sidebar-fg: 0 0% 95%;    /* Off-white text */
+    --sidebar-border-color: 148 30% 18%; 
+    
+    --sidebar-active-bg: 147 38% 35%; 
+    --sidebar-active-fg: 0 0% 95%;   
+
+    --sidebar-hover-bg: 148 30% 26%; 
+    --sidebar-hover-fg: 0 0% 95%;    
+
+    --sidebar-logo-square-bg: 0 0% 10%; /* Dark grey for logo square in dark mode */
+    --sidebar-logo-icon-fg: 147 44% 55%; /* Brighter green for logo icon in dark */
   }
 }
 

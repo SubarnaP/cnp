@@ -57,14 +57,19 @@ export default {
           '5': 'hsl(var(--chart-5))',
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
+          DEFAULT: 'hsl(var(--sidebar-bg))',
+          foreground: 'hsl(var(--sidebar-fg))',
+          border: 'hsl(var(--sidebar-border-color))',
+          active: {
+            DEFAULT: 'hsl(var(--sidebar-active-bg))',
+            foreground: 'hsl(var(--sidebar-active-fg))',
+          },
+          hover: {
+            DEFAULT: 'hsl(var(--sidebar-hover-bg))',
+            foreground: 'hsl(var(--sidebar-hover-fg))',
+          },
+          logoSquare: 'hsl(var(--sidebar-logo-square-bg))',
+          logoIcon: 'hsl(var(--sidebar-logo-icon-fg))',
         },
       },
       borderRadius: {

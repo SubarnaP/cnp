@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, CalendarDays, CalendarRange, CalendarDot, TrendingUp, Search, Bell, Settings, Info } from 'lucide-react';
+import { Users, CalendarDays, CalendarRange, Calendar, TrendingUp, Search, Bell, Settings, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface StatCardProps {
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         <StatCard
           title="This Month"
           value="5,678"
-          icon={<CalendarDot />}
+          icon={<Calendar />}
           iconBgColor="bg-orange-100 dark:bg-orange-700/30"
           iconTextColor="text-orange-500 dark:text-orange-400"
           domestic={3245}

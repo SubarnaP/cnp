@@ -1,7 +1,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import Header from '@/components/Header';
+import AppSidebar from '@/components/AppSidebar'; // Add AppSidebar
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
@@ -22,15 +22,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Belleza&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow container mx-auto px-4 py-8">
-          {children}
-        </main>
+      <body className="font-body antialiased min-h-screen flex bg-background">
+        <AppSidebar />
+        <div className="flex flex-col flex-grow ml-64"> {/* Wrapper for main content + footer */}
+          <main className="flex-grow container mx-auto px-4 py-8">
+            {children}
+          </main>
+          <footer className="py-6 text-center text-muted-foreground border-t border-border bg-background">
+            <p>&copy; {new Date().getFullYear()} ParkConnect. All rights reserved.</p>
+          </footer>
+        </div>
         <Toaster />
-        <footer className="py-6 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} ParkConnect. All rights reserved.</p>
-        </footer>
       </body>
     </html>
   );
