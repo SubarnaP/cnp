@@ -1,195 +1,149 @@
 
-"use client" 
-// Changed to client component for mock data fetching and potential future client-side filtering/search
+"use client"
 
-import { useEffect, useState } from 'react';
-import BookingCard from '@/components/BookingCard';
-import { getBookings } from '@/lib/firestore';
-import type { Booking } from '@/types/booking';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Download, Search, Filter, Loader2, AlertTriangle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePickerWithRange } from "@/components/DatePickerWithRange"; // Assuming this component exists or will be created
-import type { DateRange } from "react-day-picker";
+import { Badge } from '@/components/ui/badge';
+import { Users, CalendarDays, CalendarRange, CalendarDot, TrendingUp, Search, Bell, Settings, Info } from 'lucide-react';
+import { format } from 'date-fns';
 
-// Placeholder for DatePickerWithRange if not provided by shadcn/ui by default
-// You would typically create this component separately
-const DatePickerWithRangePlaceholder = ({ date, onDateChange }: { date?: DateRange, onDateChange: (range?: DateRange) => void }) => (
-  <Button variant="outline" onClick={() => onDateChange(undefined)}>
-    Date Range Picker (Placeholder) {date ? `${date.from} - ${date.to}` : ''}
-  </Button>
-);
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactElement;
+  iconBgColor: string;
+  iconTextColor: string;
+  domestic: number;
+  international: number;
+}
 
-
-export default function DashboardPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [countryFilter, setCountryFilter] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-
-  useEffect(() => {
-    async function fetchBookings() {
-      try {
-        setLoading(true);
-        const fetchedBookings = await getBookings();
-        // Add a mock status for demonstration
-        const bookingsWithStatus = fetchedBookings.map(b => ({ ...b, status: Math.random() > 0.5 ? 'Confirmed' : 'Pending' } as Booking));
-        setBookings(bookingsWithStatus);
-        setFilteredBookings(bookingsWithStatus);
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load bookings. Please try again later.');
-        setBookings([]);
-        setFilteredBookings([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBookings();
-  }, []);
-
-  useEffect(() => {
-    let tempBookings = bookings;
-
-    if (searchTerm) {
-      tempBookings = tempBookings.filter(booking =>
-        booking.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (booking.id && booking.id.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (countryFilter !== 'all') {
-      tempBookings = tempBookings.filter(booking =>
-        booking.visitors.some(v => v.country === countryFilter)
-      );
-    }
-    
-    if (dateRange?.from && dateRange?.to) {
-        tempBookings = tempBookings.filter(booking => {
-            const visitDate = new Date(booking.dateOfVisit);
-            return visitDate >= dateRange.from! && visitDate <= dateRange.to!;
-        });
-    }
-
-
-    setFilteredBookings(tempBookings);
-  }, [searchTerm, countryFilter, dateRange, bookings]);
-
-  const handleExportCSV = () => {
-    // Basic CSV export logic
-    if (filteredBookings.length === 0) return;
-    const headers = ['Booking ID', 'Full Name', 'Email', 'Phone', 'Date of Visit', 'Num Visitors', 'Total Price', 'Status', 'Created At', 'Visitor Names', 'Visitor Countries'];
-    const rows = filteredBookings.map(b => [
-      b.id,
-      b.fullName,
-      b.email,
-      b.phone,
-      b.dateOfVisit,
-      b.numberOfVisitors,
-      b.totalPrice,
-      b.status,
-      new Date(b.createdAt).toISOString(),
-      b.visitors.map(v => v.name).join(' | '),
-      b.visitors.map(v => v.country).join(' | ')
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "bookings_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg">Loading bookings...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-10 bg-destructive/10 p-4 rounded-md">
-        <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Bookings</h2>
-        <p className="text-destructive/80">{error}</p>
-      </div>
-    );
-  }
-
+function StatCard({ title, value, icon, iconBgColor, iconTextColor, domestic, international }: StatCardProps) {
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 bg-card rounded-lg shadow">
-        <h1 className="text-3xl font-headline text-primary">Visitor Bookings Dashboard</h1>
-        <Button onClick={handleExportCSV} disabled={filteredBookings.length === 0}>
-          <Download className="mr-2 h-4 w-4" /> Export CSV
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-card rounded-lg shadow">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search by name, email, ID..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+    <Card className="shadow-sm rounded-xl">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-3xl font-bold text-foreground">{value}</p>
+          </div>
+          <div className={`p-3 rounded-full ${iconBgColor}`}>
+            {React.cloneElement(icon, { className: `h-6 w-6 ${iconTextColor}` })}
+          </div>
         </div>
-        
-        <Select value={countryFilter} onValueChange={setCountryFilter}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Filter by country..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Countries</SelectItem>
-            <SelectItem value="Nepal">Nepali</SelectItem>
-            <SelectItem value="SAARC">SAARC</SelectItem>
-            <SelectItem value="Other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        {/* Using placeholder as DatePickerWithRange may not exist in user's current shadcn setup */}
-        <DatePickerWithRangePlaceholder date={dateRange} onDateChange={setDateRange} />
-      </div>
-
-      {filteredBookings.length === 0 ? (
-         <div className="text-center py-10 bg-secondary/20 p-4 rounded-md">
-            <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-muted-foreground">No Bookings Found</h2>
-            <p className="text-muted-foreground/80">Try adjusting your search or filters.</p>
+        <div className="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:justify-between text-xs text-muted-foreground">
+          <div className="flex items-center">
+            <span className="h-2 w-2 bg-blue-500 rounded-full mr-1.5 shrink-0"></span>
+            <span>Domestic: {domestic.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center">
+            <span className="h-2 w-2 bg-green-500 rounded-full mr-1.5 shrink-0"></span>
+            <span>International: {international.toLocaleString()}</span>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} />
-          ))}
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Minimal DatePickerWithRange component example (if you don't have one from shadcn)
-// This is a very basic example. A real one would use react-day-picker and Popover.
-// const DatePickerWithRange: React.FC<{ date?: DateRange, onDateChange: (range?: DateRange) => void }> = ({ date, onDateChange }) => {
-//   return (
-//     <Button variant="outline" onClick={() => onDateChange(undefined)}>
-//       Date Range (Example) {date ? `${date.from} - ${date.to}` : ''}
-//     </Button>
-//   );
-// };
+export default function DashboardPage() {
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    const today = new Date();
+    setCurrentDate(format(today, "MMMM d, yyyy | EEEE"));
+  }, []);
+
+  return (
+    <div className="space-y-6 p-1 md:p-4">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Visitor Management Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Overview of park visitor activities and statistics</p>
+        </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-grow md:flex-grow-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input type="search" placeholder="Search..." className="pl-9 h-9 w-full md:w-64 rounded-md" />
+          </div>
+          <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+            <span className="sr-only">Settings</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Live Visitor Count / Today's Date Section */}
+      <Card className="w-full p-6 rounded-xl shadow-md">
+        <CardContent className="flex flex-col md:flex-row justify-between items-center p-0">
+          <div className="flex items-center gap-4">
+            <div className="bg-green-100 dark:bg-green-700/30 p-3 rounded-full">
+              <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Live Visitor Count</p>
+              <p className="text-4xl font-bold text-foreground">487</p>
+            </div>
+            <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1 text-sm dark:bg-green-800/50 dark:text-green-300 dark:border-green-700">Active</Badge>
+          </div>
+          <div className="text-left md:text-right mt-4 md:mt-0">
+            <p className="text-sm text-muted-foreground">Today's Date</p>
+            <p className="text-lg font-semibold text-foreground">{currentDate || 'Loading date...'}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Today's Visitors"
+          value="214"
+          icon={<CalendarDays />}
+          iconBgColor="bg-blue-100 dark:bg-blue-700/30"
+          iconTextColor="text-blue-500 dark:text-blue-400"
+          domestic={156}
+          international={58}
+        />
+        <StatCard
+          title="This Week"
+          value="1,345"
+          icon={<CalendarRange />}
+          iconBgColor="bg-purple-100 dark:bg-purple-700/30"
+          iconTextColor="text-purple-500 dark:text-purple-400"
+          domestic={890}
+          international={455}
+        />
+        <StatCard
+          title="This Month"
+          value="5,678"
+          icon={<CalendarDot />}
+          iconBgColor="bg-orange-100 dark:bg-orange-700/30"
+          iconTextColor="text-orange-500 dark:text-orange-400"
+          domestic={3245}
+          international={2433}
+        />
+        <StatCard
+          title="Year to Date"
+          value="38,459"
+          icon={<TrendingUp />}
+          iconBgColor="bg-red-100 dark:bg-red-700/30"
+          iconTextColor="text-red-500 dark:text-red-400"
+          domestic={22134}
+          international={16325}
+        />
+      </div>
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-300 rounded-xl text-sm text-blue-700 flex items-start dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300">
+            <Info className="h-5 w-5 mr-3 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <div>
+                <strong>Demo Dashboard:</strong> The data displayed here is for illustrative purposes only and does not reflect real-time park visitor statistics. The booking list functionality has been replaced by this overview.
+            </div>
+        </div>
+    </div>
+  );
+}
