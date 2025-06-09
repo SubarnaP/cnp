@@ -278,7 +278,6 @@ export default function BookingForm() {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-primary">Rs. {totalPrice.toLocaleString()}</p>
-                {/* Pricing Structure and Breakdown removed as per request */}
               </CardContent>
             </Card>
 
@@ -286,7 +285,7 @@ export default function BookingForm() {
                 <CardHeader className="flex flex-row items-start space-x-3 pb-3">
                     <Image src="https://placehold.co/100x40.png" alt="eSewa Logo" width={80} height={32} data-ai-hint="logo payment" className="rounded"/>
                     <div>
-                        <CardTitle className="text-lg text-accent-foreground/90">Payment Information</CardTitle>
+                        <CardTitle className="text-lg text-accent-foreground/90">Pay securely with eSewa</CardTitle>
                          <CardDescription className="text-accent-foreground/70">
                             Currently, we only support payment via eSewa. Please proceed with the booking and follow instructions for payment.
                         </CardDescription>
