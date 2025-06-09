@@ -8,7 +8,6 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,14 +72,20 @@ export default function BookingForm() {
 
   useEffect(() => {
     const currentVisitorCount = fields.length;
-    if (numberOfVisitors > currentVisitorCount) {
-      for (let i = 0; i < numberOfVisitors - currentVisitorCount; i++) {
-        append({ id: crypto.randomUUID(), name: '', country: 'Nepal' as CountryOption });
-      }
-    } else if (numberOfVisitors < currentVisitorCount) {
-      for (let i = 0; i < currentVisitorCount - numberOfVisitors; i++) {
-        remove(currentVisitorCount - 1 - i);
-      }
+    if (numberOfVisitors > 0 && numberOfVisitors <= 10) { // Ensure valid number before adjusting
+        if (numberOfVisitors > currentVisitorCount) {
+        for (let i = 0; i < numberOfVisitors - currentVisitorCount; i++) {
+            append({ id: crypto.randomUUID(), name: '', country: 'Nepal' as CountryOption });
+        }
+        } else if (numberOfVisitors < currentVisitorCount) {
+        for (let i = 0; i < currentVisitorCount - numberOfVisitors; i++) {
+            remove(currentVisitorCount - 1 - i);
+        }
+        }
+    } else if (numberOfVisitors === 0 && currentVisitorCount > 0) { // If number of visitors is set to 0, remove all fields
+        for (let i = currentVisitorCount - 1; i >= 0; i--) {
+            remove(i);
+        }
     }
   }, [numberOfVisitors, fields.length, append, remove]);
 
@@ -216,18 +221,17 @@ export default function BookingForm() {
               render={({ field }) => (
                 <FormItem>
                   <Label htmlFor="numberOfVisitors"><Users className="inline h-4 w-4 mr-1" />Number of Visitors</Label>
-                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)}>
-                    <FormControl>
-                      <SelectTrigger id="numberOfVisitors">
-                        <SelectValue placeholder="Select number of visitors" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {[...Array(10)].map((_, i) => (
-                        <SelectItem key={i + 1} value={String(i + 1)}>{i + 1}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input 
+                      id="numberOfVisitors" 
+                      type="number" 
+                      min="1" 
+                      max="10"
+                      placeholder="e.g. 2" 
+                      {...field} 
+                      onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} // Ensure value is parsed as int
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -285,3 +289,4 @@ export default function BookingForm() {
     </Card>
   );
 }
+

@@ -4,7 +4,7 @@ import type { Visitor, CountryOption } from '@/types/booking';
 export const PRICING_TIERS: Record<CountryOption, number> = {
   Nepal: 100,
   SAARC: 200,
-  Other: 500,
+  Other: 1000, // Updated price for Other
 };
 
 export const calculateTotalPrice = (visitors: Pick<Visitor, 'country'>[]): number => {
@@ -28,3 +28,4 @@ export const isValidPhone = (phone: string): boolean => {
 export const generateBookingId = (): string => {
   return `CNP-${Date.now().toString(36).slice(-4).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 };
+
