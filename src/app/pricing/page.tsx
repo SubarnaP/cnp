@@ -10,6 +10,31 @@ export const metadata: Metadata = {
   description: 'View ticket pricing tiers for Chitwan National Park.',
 };
 
+// Custom SVG Icons for flags (simplified representations)
+const UserFlagNepal = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M0 0H32V24H0V0Z" fill="#DC143C"/>
+    <path d="M0 0L16 12L0 24V0Z" fill="#003893"/>
+    <path d="M7 15C8.10457 15 9 14.1046 9 13C9 11.8954 8.10457 11 7 11C5.89543 11 5 11.8954 5 13C5 14.1046 5.89543 15 7 15Z" fill="white"/>
+    <path d="M7 9C7.82843 9 8.5 8.32843 8.5 7.5C8.5 6.67157 7.82843 6 7 6C6.17157 6 5.5 6.67157 5.5 7.5C5.5 8.32843 6.17157 9 7 9Z" fill="white"/>
+  </svg>
+);
+
+const UserFlagSaarc = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <rect width="32" height="24" rx="3" fill="#4CAF50"/>
+    <circle cx="16" cy="12" r="5" fill="white"/>
+    <circle cx="16" cy="12" r="3" fill="#FF9800"/>
+  </svg>
+);
+
+const UserFlagOther = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <rect width="32" height="24" rx="3" fill="#2196F3"/>
+    <path d="M16 4L19.09 9.26L25 10.17L20.5 14.14L21.82 20L16 17.27L10.18 20L11.5 14.14L7 10.17L12.91 9.26L16 4Z" fill="#FFEB3B"/>
+  </svg>
+);
+
 const pricingData = [
   { type: 'Nepali Citizen', price: PRICING_TIERS.Nepal, icon: <UserFlagNepal className="h-6 w-6 text-primary" /> },
   { type: 'SAARC Country Citizen', price: PRICING_TIERS.SAARC, icon: <UserFlagSaarc className="h-6 w-6 text-primary" /> },
@@ -85,29 +110,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
-
-// Custom SVG Icons for flags (simplified representations)
-const UserFlagNepal = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <path d="M0 0H32V24H0V0Z" fill="#DC143C"/>
-    <path d="M0 0L16 12L0 24V0Z" fill="#003893"/>
-    <path d="M7 15C8.10457 15 9 14.1046 9 13C9 11.8954 8.10457 11 7 11C5.89543 11 5 11.8954 5 13C5 14.1046 5.89543 15 7 15Z" fill="white"/>
-    <path d="M7 9C7.82843 9 8.5 8.32843 8.5 7.5C8.5 6.67157 7.82843 6 7 6C6.17157 6 5.5 6.67157 5.5 7.5C5.5 8.32843 6.17157 9 7 9Z" fill="white"/>
-  </svg>
-);
-
-const UserFlagSaarc = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <rect width="32" height="24" rx="3" fill="#4CAF50"/>
-    <circle cx="16" cy="12" r="5" fill="white"/>
-    <circle cx="16" cy="12" r="3" fill="#FF9800"/>
-  </svg>
-);
-
-const UserFlagOther = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <rect width="32" height="24" rx="3" fill="#2196F3"/>
-    <path d="M16 4L19.09 9.26L25 10.17L20.5 14.14L21.82 20L16 17.27L10.18 20L11.5 14.14L7 10.17L12.91 9.26L16 4Z" fill="#FFEB3B"/>
-  </svg>
-);
