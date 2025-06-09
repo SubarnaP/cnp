@@ -8,11 +8,11 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import VisitorFields from './VisitorFields';
-import { calculateTotalPrice, PRICING_TIERS } from '@/lib/helpers';
 import { addBooking } from '@/lib/firestore';
 import type { Visitor, CountryOption } from '@/types/booking';
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,21 @@ import { CalendarIcon, UserPlus, Users, DollarSign, Leaf, Mail, Phone, Info } fr
 import { format } from "date-fns";
 import Image from 'next/image';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+// Updated pricing structure
+const PRICING_TIERS = {
+  Nepal: 100,
+  SAARC: 200,
+  Other: 1000,
+};
+
+// Helper function to calculate total price
+const calculateTotalPrice = (visitors: Array<{ country: string }>) => {
+  return visitors.reduce((total, visitor) => {
+    const price = PRICING_TIERS[visitor.country as keyof typeof PRICING_TIERS] || 0;
+    return total + price;
+  }, 0);
+};
 
 const visitorSchema = z.object({
   id: z.string(), // For client-side keying
@@ -32,7 +47,7 @@ const bookingFormSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
   dateOfVisit: z.date({ required_error: "Date of visit is required." }),
-  numberOfVisitors: z.number().min(1, 'At least one visitor is required').max(10, 'Maximum 10 visitors allowed'),
+  numberOfVisitors: z.number().min(1, 'At least one visitor is required').max(50, 'Maximum 50 visitors allowed'),
   visitors: z.array(visitorSchema).min(1, 'Visitor details are required'),
 });
 
@@ -51,7 +66,7 @@ export default function BookingForm() {
       phone: '',
       dateOfVisit: undefined,
       numberOfVisitors: 1,
-      visitors: [{ id: crypto.randomUUID(), name: '', country: 'Nepal' }],
+      visitors: [{ id: crypto.randomUUID(), name: '', country: 'Nepal' as CountryOption }],
     },
   });
 
@@ -65,14 +80,20 @@ export default function BookingForm() {
   const watchedVisitors = watch('visitors');
   const numberOfVisitors = watch('numberOfVisitors');
 
+  // Update total price when visitors change (including country changes)
   useEffect(() => {
-    const newTotal = calculateTotalPrice(watchedVisitors);
-    setTotalPrice(newTotal);
-  }, [watchedVisitors]);
+    if (watchedVisitors && watchedVisitors.length > 0) {
+      const newTotal = calculateTotalPrice(watchedVisitors);
+      setTotalPrice(newTotal);
+    } else {
+      setTotalPrice(0);
+    }
+  }, [JSON.stringify(watchedVisitors)]); // Use JSON.stringify to detect deep changes
 
+  // Sync visitor fields with numberOfVisitors input
   useEffect(() => {
     const currentVisitorCount = fields.length;
-    if (numberOfVisitors > 0 && numberOfVisitors <= 10) { // Ensure valid number before adjusting
+    if (numberOfVisitors > 0 && numberOfVisitors <= 50) { // Ensure valid number before adjusting
         if (numberOfVisitors > currentVisitorCount) {
         for (let i = 0; i < numberOfVisitors - currentVisitorCount; i++) {
             append({ id: crypto.randomUUID(), name: '', country: 'Nepal' as CountryOption });
@@ -88,7 +109,6 @@ export default function BookingForm() {
         }
     }
   }, [numberOfVisitors, fields.length, append, remove]);
-
 
   const onSubmit: SubmitHandler<BookingFormData> = async (data) => {
     setIsSubmitting(true);
@@ -223,16 +243,22 @@ export default function BookingForm() {
                   <Label htmlFor="numberOfVisitors"><Users className="inline h-4 w-4 mr-1" />Number of Visitors</Label>
                   <FormControl>
                     <Input 
-                      id="numberOfVisitors" 
-                      type="number" 
-                      min="1" 
-                      max="10"
-                      placeholder="e.g. 2" 
-                      {...field} 
-                      onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} // Ensure value is parsed as int
+                      id="numberOfVisitors"
+                      type="number"
+                      min="1"
+                      max="50"
+                      placeholder="Enter number of visitors"
+                      {...field}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        field.onChange(value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Maximum 50 visitors allowed per booking
+                  </p>
                 </FormItem>
               )}
             />
@@ -252,11 +278,7 @@ export default function BookingForm() {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-primary">Rs. {totalPrice.toLocaleString()}</p>
-                <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                    <li>Nepali: Rs. {PRICING_TIERS.Nepal}</li>
-                    <li>SAARC: Rs. {PRICING_TIERS.SAARC}</li>
-                    <li>Other: Rs. {PRICING_TIERS.Other}</li>
-                </ul>
+                {/* Pricing Structure and Breakdown removed as per request */}
               </CardContent>
             </Card>
 
@@ -289,4 +311,3 @@ export default function BookingForm() {
     </Card>
   );
 }
-
