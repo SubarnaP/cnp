@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Leaf, LayoutDashboard, Users, Ticket, ScanLine, CircleDollarSign, ShieldAlert } from 'lucide-react';
+import { Leaf, LayoutDashboard, Users, Ticket, ScanLine, CircleDollarSign } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,6 @@ const mainNavLinks = [
   { href: '/booking', label: 'Ticketing', icon: Ticket },
   { href: '/scan-tickets', label: 'Scan Tickets', icon: ScanLine },
   { href: '/pricing', label: 'Pricing', icon: CircleDollarSign },
-  { href: '/verifier', label: 'Verifier', icon: ShieldAlert },
 ];
 
 export default function AppSidebar() {
