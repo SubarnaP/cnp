@@ -332,10 +332,20 @@ export default function BookingForm() {
                         </CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                     <p className="text-sm text-accent-foreground/80">
                         <Info className="inline h-4 w-4 mr-1 text-accent"/>
                         This is a demo. No actual payment will be processed.
+                    </p>
+                    <Button
+                        type="button"
+                        onClick={() => window.alert('✅ eSewa payment successful!')}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        Pay with eSewa (Demo)
+                    </Button>
+                    <p className="text-xs text-center text-accent-foreground/70 mt-2">
+                        Note: This is a demo payment button for testing purposes only. No real transaction will occur.
                     </p>
                 </CardContent>
             </Card>
@@ -351,3 +361,5 @@ export default function BookingForm() {
     </Card>
   );
 }
+
+    
