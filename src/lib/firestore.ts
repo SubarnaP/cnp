@@ -1,10 +1,63 @@
 
-import type { Booking } from '@/types/booking';
+import type { Booking, CountryOption } from '@/types/booking';
 import { db } from './firebase'; // Mock db
 import { generateBookingId } from './helpers';
+import { PRICING_TIERS as DEFAULT_PRICING_TIERS } from './helpers'; // Import default pricing
 
 // In a real app, you'd use Firebase SDK:
-// import { collection, addDoc, getDocs, doc, getDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+// import { collection, addDoc, getDocs, doc, getDoc, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+
+export interface PricingConfig {
+  Nepal: number;
+  SAARC: number;
+  Other: number;
+}
+
+const PRICING_CONFIG_DOC_PATH = 'settings/pricingConfig';
+
+export const getPricingConfig = async (): Promise<PricingConfig> => {
+  try {
+    // const pricingDocRef = doc(db, PRICING_CONFIG_DOC_PATH);
+    // const docSnap = await getDoc(pricingDocRef);
+    // if (docSnap.exists()) {
+    //   return docSnap.data() as PricingConfig;
+    // }
+    // console.warn('Pricing config not found in Firestore, returning default prices.');
+    // return DEFAULT_PRICING_TIERS; // Fallback to default
+
+    // Mock implementation
+    console.log('Mock: Fetching pricing config from Firestore');
+    const docSnap = await db.collection('settings').doc('pricingConfig').get();
+     if (docSnap.exists() && docSnap.data()) {
+      // Ensure the data matches the PricingConfig structure, otherwise return defaults
+      const data = docSnap.data();
+      if (typeof data.Nepal === 'number' && typeof data.SAARC === 'number' && typeof data.Other === 'number') {
+        return data as PricingConfig;
+      }
+    }
+    console.warn('Mock: Pricing config not found or invalid in Firestore, returning default prices.');
+    return DEFAULT_PRICING_TIERS; // Fallback to default
+  } catch (error) {
+    console.error('Error getting pricing config: ', error);
+    // In case of error, also fallback to default to ensure app functionality
+    return DEFAULT_PRICING_TIERS;
+  }
+};
+
+export const updatePricingConfig = async (newPrices: PricingConfig): Promise<void> => {
+  try {
+    // const pricingDocRef = doc(db, PRICING_CONFIG_DOC_PATH);
+    // await setDoc(pricingDocRef, newPrices);
+
+    // Mock implementation
+    console.log('Mock: Updating pricing config in Firestore', newPrices);
+    await db.collection('settings').doc('pricingConfig').set(newPrices);
+  } catch (error) {
+    console.error('Error updating pricing config: ', error);
+    throw new Error('Failed to update pricing config.');
+  }
+};
+
 
 export const addBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt'>): Promise<string> => {
   try {
@@ -47,7 +100,7 @@ export const getBookings = async (): Promise<Booking[]> => {
       id: doc.id,
       ...doc.data(),
       // Ensure createdAt is a Date object if it's stored as a Firestore Timestamp
-      createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt), 
+      createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt),
     })) as Booking[];
   } catch (error) {
     console.error('Error getting bookings: ', error);

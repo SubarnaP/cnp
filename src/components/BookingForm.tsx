@@ -13,28 +13,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import VisitorFields from './VisitorFields';
-import { addBooking } from '@/lib/firestore';
+import { addBooking, getPricingConfig, type PricingConfig } from '@/lib/firestore';
 import type { Visitor, CountryOption } from '@/types/booking';
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, UserPlus, Users, DollarSign, Leaf, Mail, Phone, Info } from 'lucide-react';
+import { CalendarIcon, UserPlus, Users, DollarSign, Leaf, Mail, Phone, Info, Loader2 } from 'lucide-react';
 import { format } from "date-fns";
 import Image from 'next/image';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { PRICING_TIERS as DEFAULT_PRICING_TIERS } from '@/lib/helpers';
 
-// Updated pricing structure
-const PRICING_TIERS = {
-  Nepal: 100,
-  SAARC: 200,
-  Other: 1000,
-};
-
-// Helper function to calculate total price
-const calculateTotalPrice = (visitors: Array<{ country: string }>) => {
-  return visitors.reduce((total, visitor) => {
-    const price = PRICING_TIERS[visitor.country as keyof typeof PRICING_TIERS] || 0;
-    return total + price;
-  }, 0);
-};
 
 const visitorSchema = z.object({
   id: z.string(), // For client-side keying
@@ -57,6 +44,40 @@ export default function BookingForm() {
   const { toast } = useToast();
   const [totalPrice, setTotalPrice] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pricingTiers, setPricingTiers] = useState<PricingConfig>(DEFAULT_PRICING_TIERS);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(true);
+
+  // Helper function to calculate total price using current pricingTiers
+  const calculateDynamicTotalPrice = useCallback((visitors: Array<{ country: string }>) => {
+    if (!pricingTiers) return 0; // Or handle loading state appropriately
+    return visitors.reduce((total, visitor) => {
+      const price = pricingTiers[visitor.country as keyof PricingConfig] || 0;
+      return total + price;
+    }, 0);
+  }, [pricingTiers]);
+
+
+  useEffect(() => {
+    async function fetchPrices() {
+      setIsLoadingPrices(true);
+      try {
+        const fetchedPrices = await getPricingConfig();
+        setPricingTiers(fetchedPrices);
+      } catch (error) {
+        console.error("Failed to fetch pricing for booking form:", error);
+        toast({
+          title: 'Could Not Load Latest Prices',
+          description: 'Using default prices. Please check your connection or try again.',
+          variant: 'destructive',
+          duration: 7000,
+        });
+        // Fallback to default prices already set in useState initial value
+      } finally {
+        setIsLoadingPrices(false);
+      }
+    }
+    fetchPrices();
+  }, [toast]);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingFormSchema),
@@ -80,15 +101,16 @@ export default function BookingForm() {
   const watchedVisitors = watch('visitors');
   const numberOfVisitors = watch('numberOfVisitors');
 
-  // Update total price when visitors change (including country changes)
+  // Update total price when visitors change (including country changes) or when pricingTiers are loaded/updated
   useEffect(() => {
-    if (watchedVisitors && watchedVisitors.length > 0) {
-      const newTotal = calculateTotalPrice(watchedVisitors);
+    if (watchedVisitors && watchedVisitors.length > 0 && pricingTiers) {
+      const newTotal = calculateDynamicTotalPrice(watchedVisitors);
       setTotalPrice(newTotal);
     } else {
       setTotalPrice(0);
     }
-  }, [JSON.stringify(watchedVisitors)]); // Use JSON.stringify to detect deep changes
+  }, [JSON.stringify(watchedVisitors), pricingTiers, calculateDynamicTotalPrice]);
+
 
   // Sync visitor fields with numberOfVisitors input
   useEffect(() => {
@@ -112,7 +134,17 @@ export default function BookingForm() {
 
   const onSubmit: SubmitHandler<BookingFormData> = async (data) => {
     setIsSubmitting(true);
+    if (isLoadingPrices) {
+        toast({
+            title: "Prices still loading",
+            description: "Please wait for the latest prices to load before booking.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+    }
     try {
+      const finalTotalPrice = calculateDynamicTotalPrice(data.visitors);
       const bookingDataToSave = {
         fullName: data.fullName,
         email: data.email,
@@ -120,7 +152,7 @@ export default function BookingForm() {
         dateOfVisit: format(data.dateOfVisit, "yyyy-MM-dd"),
         numberOfVisitors: data.numberOfVisitors,
         visitors: data.visitors.map(v => ({ name: v.name, country: v.country })), // Store without client-side id
-        totalPrice: calculateTotalPrice(data.visitors),
+        totalPrice: finalTotalPrice,
       };
 
       const bookingId = await addBooking(bookingDataToSave);
@@ -130,14 +162,14 @@ export default function BookingForm() {
           <div>
             <p>Your booking ID is {bookingId}.</p>
             <p>Visit Date: {format(data.dateOfVisit, "PPP")}</p>
-            <p>Total Amount: Rs. {totalPrice}</p>
+            <p>Total Amount: Rs. {finalTotalPrice.toLocaleString()}</p>
           </div>
         ),
         variant: "default",
         duration: 7000,
       });
       form.reset();
-      setTotalPrice(0);
+      setTotalPrice(0); // Reset total price display after successful booking
     } catch (error) {
       console.error("Booking failed:", error);
       toast({
@@ -242,7 +274,7 @@ export default function BookingForm() {
                 <FormItem>
                   <Label htmlFor="numberOfVisitors"><Users className="inline h-4 w-4 mr-1" />Number of Visitors</Label>
                   <FormControl>
-                    <Input 
+                    <Input
                       id="numberOfVisitors"
                       type="number"
                       min="1"
@@ -274,10 +306,19 @@ export default function BookingForm() {
 
             <Card className="bg-secondary/30">
               <CardHeader>
-                <CardTitle className="text-xl flex items-center"><DollarSign className="h-6 w-6 mr-2 text-primary" />Total Price</CardTitle>
+                <CardTitle className="text-xl flex items-center">
+                  <DollarSign className="h-6 w-6 mr-2 text-primary" />Total Price
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-primary">Rs. {totalPrice.toLocaleString()}</p>
+                {isLoadingPrices ? (
+                    <div className="flex items-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                        <p className="text-lg text-muted-foreground">Loading prices...</p>
+                    </div>
+                ) : (
+                    <p className="text-3xl font-bold text-primary">Rs. {totalPrice.toLocaleString()}</p>
+                )}
               </CardContent>
             </Card>
 
@@ -301,7 +342,7 @@ export default function BookingForm() {
 
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting}>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting || isLoadingPrices}>
               {isSubmitting ? 'Processing...' : 'Book Tickets Now'}
             </Button>
           </CardFooter>
